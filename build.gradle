@@ -1,0 +1,73 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:1.3.5.RELEASE"
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'scala'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'application'
+apply plugin: 'spring-boot'
+
+jar {
+    baseName = 'spring-boot-sample'
+    version = '0.1'
+}
+
+sourceCompatibility = 1.8
+mainClassName = "com.spartasystems.boot.route.Application"
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    loadTestCompile.extendsFrom testCompile
+    loadTestRuntime.extendsFrom testRuntime
+}
+
+sourceSets {
+    perfTest {
+        scala {
+            srcDir file('src/loadTest/scala')
+        }
+        resources.srcDir file('src/loadTest/resources')
+    }
+}
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-data-jpa")
+    compile("org.springframework.boot:spring-boot-starter-undertow")
+    compile('com.fasterxml.jackson.core:jackson-databind:2.6.3')
+    compile('org.springframework:spring-webmvc')
+    compile 'mysql:mysql-connector-java:5.1.39'
+    testCompile("junit:junit")
+    testCompile 'org.assertj:assertj-core:3.4.1'
+    testCompile 'org.mockito:mockito-all:1.10.19'
+    perfTestCompile 'io.gatling.highcharts:gatling-charts-highcharts:2.2.0'
+}
+
+task perf(type: JavaExec) {
+    classpath = sourceSets.perfTest.runtimeClasspath
+
+    // Gatling application
+     main = "io.gatling.app.Gatling"
+
+    args = [
+            "--simulation", "scm.LoadTestSimulation",
+            "--results-folder", "${buildDir}/gatling-results"
+    ]
+}
+
+task all {
+    dependsOn build
+}
+
+tasks.withType(Test) {
+    reports.html.destination = file("${reporting.baseDir}/${name}")
+}
